@@ -34,7 +34,7 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, document);
 
   const port = process.env.PORT || 3333;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0'); // Fix: Listen on all interfaces for Docker
   Logger.log(`🚀 API Server đang chạy tại: http://localhost:${port}/${globalPrefix}`);
 }
 
