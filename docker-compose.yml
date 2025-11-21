@@ -1,0 +1,39 @@
+# File: docker-compose.yml
+# Tham chiếu: TÀI LIỆU THIẾT KẾ KỸ THUẬT - Mục 5 & 7 [cite: 25, 482]
+
+version: '3.8'
+
+services:
+  # 1. Database chính: PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: coffee_tech_postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: adminpassword
+      POSTGRES_DB: coffee_tech_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - coffee-net
+
+  # 2. Cache & Queue: Redis (Dùng cho BullMQ và Socket.io)
+  redis:
+    image: redis:7-alpine
+    container_name: coffee_tech_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - coffee-net
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  coffee-net:
+    driver: bridge

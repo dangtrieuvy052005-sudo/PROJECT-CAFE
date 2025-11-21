@@ -1,0 +1,77 @@
+# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+
+# compiled output
+dist
+tmp
+out-tsc
+
+# dependencies
+node_modules
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# misc
+/.sass-cache
+/connect.lock
+/coverage
+/libpeerconnection.log
+npm-debug.log
+yarn-error.log
+testem.log
+/typings
+
+# System Files
+.DS_Store
+Thumbs.db
+
+.nx/cache
+.nx/workspace-data
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
+
+# Next.js
+.next
+out
+
+vite.config.*.timestamp*
+/generated/prisma
+
+# Security & Environment (QUAN TRỌNG: Phải thêm)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+```
+
+**Giải thích:**
+* `.env`: Chặn file chứa mật khẩu thật.
+* `.env.*`: Chặn các biến thể (ví dụ `.env.production`).
+* `!.env.example`: **Giữ lại** file này (dấu `!`). Đây là file mẫu (không chứa pass thật) để đồng đội biết cần cấu hình những biến gì.
+
+---
+
+### Cách xử lý nếu bạn "lỡ tay" commit file .env rồi?
+
+Nếu bạn đã lỡ chạy `git add .` hoặc `git commit` trước khi sửa `.gitignore`, file `.env` vẫn sẽ bị đẩy lên. Hãy chạy lệnh sau để gỡ nó ra khỏi Git nhưng vẫn giữ lại ở máy tính:
+
+```bash
+git rm --cached .env

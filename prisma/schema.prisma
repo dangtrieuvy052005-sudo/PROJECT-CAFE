@@ -1,0 +1,159 @@
+// File: prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- 1. Nhóm Quản lý Sản phẩm & Định lượng ---
+
+model Category {
+  id            Int        @id @default(autoincrement())
+  name          String
+  parentId      Int?       @map("parent_id")
+  displayOrder  Int        @default(0) @map("display_order")
+  
+  // Quan hệ đệ quy (Danh mục cha - con)
+  parent        Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children      Category[] @relation("CategoryHierarchy")
+  products      Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id             Int              @id @default(autoincrement())
+  categoryId     Int              @map("category_id")
+  name           String
+  basePrice      Int              @map("base_price") // Lưu integer (VND)
+  imageUrl       String?          @map("image_url")
+  isActive       Boolean          @default(true) @map("is_active")
+  allowTakeaway  Boolean          @default(true) @map("allow_takeaway")
+  
+  category       Category         @relation(fields: [categoryId], references: [id])
+  variants       ProductVariant[]
+  
+  @@index([isActive], name: "idx_products_active")
+  @@map("products")
+}
+
+model ProductVariant {
+  id              Int         @id @default(autoincrement())
+  productId       Int         @map("product_id")
+  name            String      // VD: Size L, Nóng
+  skuCode         String      @unique @map("sku_code") 
+  priceAdjustment Int         @default(0) @map("price_adjustment")
+  
+  product         Product     @relation(fields: [productId], references: [id])
+  recipes         Recipe[]
+  orderItems      OrderItem[]
+
+  @@map("product_variants")
+}
+
+model Ingredient {
+  id              Int      @id @default(autoincrement())
+  name            String
+  unit            String   // Đơn vị gốc: g, ml
+  storageUnit     String   @map("storage_unit") // Đơn vị nhập: thùng, bao
+  conversionRate  Float    @default(1) @map("conversion_rate")
+  costPrice       Int      @default(0) @map("cost_price") // Giá vốn bình quân
+  currentStock    Float    @default(0) @map("current_stock")
+  minStockAlert   Float    @default(0) @map("min_stock_alert")
+  
+  recipes         Recipe[]
+  transactions    InventoryTransaction[]
+
+  @@map("ingredients")
+}
+
+// Bảng trung gian cho công thức (Định lượng)
+model Recipe {
+  id               Int            @id @default(autoincrement())
+  productVariantId Int            @map("product_variant_id")
+  ingredientId     Int            @map("ingredient_id")
+  quantityNeeded   Float          @map("quantity_needed")
+  wastageRate      Float          @default(0) @map("wastage_rate") // Tỷ lệ hao hụt
+  
+  variant          ProductVariant @relation(fields: [productVariantId], references: [id])
+  ingredient       Ingredient     @relation(fields: [ingredientId], references: [id])
+
+  @@map("recipes")
+}
+
+// --- 2. Nhóm Đơn hàng & Giao dịch ---
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+}
+
+model Order {
+  id             String        @id @default(uuid()) // UUID chuẩn SRS
+  code           String        @unique // Readable ID: #A123
+  storeId        Int           @map("store_id")
+  totalAmount    Int           @map("total_amount")
+  taxAmount      Int           @map("tax_amount")
+  discountAmount Int           @default(0) @map("discount_amount")
+  finalAmount    Int           @map("final_amount")
+  status         OrderStatus   @default(PENDING)
+  paymentStatus  PaymentStatus @default(UNPAID) @map("payment_status")
+  
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  
+  items          OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id               Int            @id @default(autoincrement())
+  orderId          String         @map("order_id")
+  productVariantId Int            @map("product_variant_id")
+  quantity         Int
+  unitPrice        Int            @map("unit_price")
+  originalPrice    Int            @map("original_price") // Lưu giá gốc lúc bán
+  note             String?
+  
+  order            Order          @relation(fields: [orderId], references: [id])
+  variant          ProductVariant @relation(fields: [productVariantId], references: [id])
+
+  @@map("order_items")
+}
+
+// --- 3. Nhóm Kho & Audit Log ---
+
+enum TransactionType {
+  IMPORT
+  SALE
+  DAMAGE
+  CORRECTION
+}
+
+model InventoryTransaction {
+  id           Int             @id @default(autoincrement())
+  ingredientId Int             @map("ingredient_id")
+  changeAmount Float           @map("change_amount") // + nhập, - xuất
+  type         TransactionType
+  referenceId  String?         @map("reference_id") // Order ID hoặc Import ID
+  balanceAfter Float           @map("balance_after") 
+  createdAt    DateTime        @default(now()) @map("created_at")
+  
+  ingredient   Ingredient      @relation(fields: [ingredientId], references: [id])
+
+  @@map("inventory_transactions")
+}
