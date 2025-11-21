@@ -1,4 +1,8 @@
-import React, { useEffect, useState } from 'react';
+const fs = require('fs');
+const path = require('path');
+
+const appTsxPath = 'apps/web-pos/src/app/app.tsx';
+const appTsxContent = `import React, { useEffect, useState } from 'react';
 import { AppThemeProvider } from './theme-provider';
 import { PosLayout } from '../features/pos/PosLayout';
 import { ProductCard } from '../features/menu/ProductCard';
@@ -76,7 +80,7 @@ function PosApp() {
         const orderCode = response.data.data?.code || 'MỚI';
         modalApi.success({
           title: 'Thanh toán thành công!',
-          content: `Đơn hàng #${orderCode} đã được chuyển xuống bếp.`,
+          content: \`Đơn hàng #\${orderCode} đã được chuyển xuống bếp.\`,
           okText: 'Đóng',
         });
       } else {
@@ -111,7 +115,7 @@ function PosApp() {
               imageUrl={product.imageUrl}
               onClick={() => { 
                 addToCart(product); 
-                messageApi.success({ content: `Thêm ${product.name}`, key: 'add_cart', duration: 1 }); 
+                messageApi.success({ content: \`Thêm \${product.name}\`, key: 'add_cart', duration: 1 }); 
               }}
             />
           ))}
@@ -188,4 +192,14 @@ export function App() {
   );
 }
 
-export default App;
+export default App;`;
+
+try {
+  fs.writeFileSync(appTsxPath, appTsxContent);
+  console.log(
+    '✅ Đã nâng cấp Frontend lên chuẩn Hooks: apps/web-pos/src/app/app.tsx'
+  );
+  console.log('🚀 Hãy quay lại trình duyệt và thử thanh toán!');
+} catch (err) {
+  console.error('❌ Lỗi ghi file:', err);
+}
