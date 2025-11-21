@@ -1,42 +1,44 @@
 # --- Giai đoạn 1: Build ---
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# 1. Copy các file cấu hình package
+# Cài đặt OpenSSL cho Debian (Cần thiết cho Prisma)
+RUN apt-get update -y && apt-get install -y openssl
+
+# Copy file cấu hình
 COPY package.json package-lock.json* ./
-# Copy thư mục prisma để generate client
 COPY prisma ./prisma/
 
-# 2. Cài đặt dependencies
+# Cài đặt dependencies
 RUN npm install --legacy-peer-deps
 
-# 3. Copy toàn bộ mã nguồn
+# Copy source code
 COPY . .
 
-# 4. Generate Prisma Client (Quan trọng)
+# Generate Prisma Client
 RUN npx prisma generate
 
-# 5. Build API Server và Worker (Chế độ Production)
+# Build API & Worker
 RUN npx nx build api-server --prod
 RUN npx nx build job-worker --prod
 
-# --- Giai đoạn 2: Runner (Chạy thật) ---
-FROM node:20-alpine AS runner
+# --- Giai đoạn 2: Runner ---
+FROM node:20-slim AS runner
 
 WORKDIR /app
 
-# Copy các file cần thiết từ giai đoạn Build
+# Cài đặt OpenSSL cho môi trường chạy
+RUN apt-get update -y && apt-get install -y openssl
+
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/prisma ./prisma
 
-# Cài đặt lại Prisma Client ở môi trường này
+# Generate lại Client cho môi trường Runner
 RUN npx prisma generate
 
-# Mở cổng mạng
 EXPOSE 3333
 
-# Lệnh chạy mặc định (Chạy API Server)
 CMD ["node", "dist/apps/api-server/main.js"]

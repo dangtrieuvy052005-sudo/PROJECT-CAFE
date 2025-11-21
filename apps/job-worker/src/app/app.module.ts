@@ -1,19 +1,16 @@
-// apps/job-worker/src/app/app.module.ts
 import { Module, Logger } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { InventoryProcessor } from './inventory.processor';
 
 @Module({
   imports: [
-    // 1. Cấu hình kết nối Redis
     BullModule.forRoot({
       connection: {
         host: process.env.REDIS_HOST || '127.0.0.1',
         port: parseInt(process.env.REDIS_PORT || '6379'),
+        password: process.env.REDIS_PASSWORD || undefined,
       },
     }),
-
-    // 2. QUAN TRỌNG: Phải đăng ký Queue tên là 'inventory-queue' thì Processor mới nhận việc!
     BullModule.registerQueue({
       name: 'inventory-queue',
     }),
@@ -23,6 +20,6 @@ import { InventoryProcessor } from './inventory.processor';
 })
 export class AppModule {
   constructor() {
-    Logger.log('✅ AppModule Worker đã load thành công!', 'JobWorker');
+    Logger.log('✅ Worker Module Loaded with Redis: ' + (process.env.REDIS_HOST || 'localhost'));
   }
 }
